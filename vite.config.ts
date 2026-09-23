@@ -20,7 +20,7 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
     // Every route is static hardcoded content, so render it to HTML at build time.
-    pages: [{ path: "/" }],
+    pages: [{ path: basePath }],
     prerender: { enabled: true, autoStaticPathsDiscovery: false },
   },
 });
