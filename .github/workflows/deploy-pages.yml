@@ -24,6 +24,11 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Show versions
+        run: |
+          bun --version
+          cat bun.lock | head -5 || true
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
@@ -32,16 +37,32 @@ jobs:
           BASE_PATH: /rayhan-genai-folio/
         run: bun run build
 
-      - name: Prepare static output
+      - name: Show full build output tree
         run: |
-          cp dist/client/index.html dist/client/404.html
-          touch dist/client/.nojekyll
+          echo "--- Full tree under dist/ and .output/ ---"
+          find dist .output -type f 2>/dev/null | sort || echo "Neither dist nor .output exists"
+
+      - name: Locate and prepare static output
+        id: locate
+        run: |
+          FOUND=$(find dist .output -name "index.html" 2>/dev/null | head -1)
+          if [ -z "$FOUND" ]; then
+            echo "ERROR: no index.html found anywhere under dist/ or .output/"
+            echo "--- Full repo root listing ---"
+            ls -la
+            exit 1
+          fi
+          OUT_DIR=$(dirname "$FOUND")
+          echo "Found index.html in: $OUT_DIR"
+          cp "$OUT_DIR/index.html" "$OUT_DIR/404.html"
+          touch "$OUT_DIR/.nojekyll"
+          echo "out_dir=$OUT_DIR" >> "$GITHUB_OUTPUT"
 
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist/client
+          path: ${{ steps.locate.outputs.out_dir }}
 
   deploy:
     needs: build
